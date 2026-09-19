@@ -1,0 +1,68 @@
+{
+  "input": {
+    "group": "Input file",
+    "browse": "Browse...",
+    "placeholder": "No file selected"
+  },
+  "output": {
+    "group": "Output",
+    "dir_label": "Directory:",
+    "dir_browse": "Browse...",
+    "dir_placeholder": "No directory selected",
+    "filename_label": "File name:",
+    "filename_placeholder": "output_filename",
+    "filename_invalid": "Filename contains invalid characters: < > : \" / \\ | ? *"
+  },
+  "options": {
+    "group": "Options",
+    "type_label": "Element type",
+    "type_u8":  "unsigned char (u8)",
+    "type_u16": "unsigned short (u16)",
+    "type_u32": "unsigned int (u32)",
+    "type_u64": "unsigned long long (u64)",
+    "mode_label": "Output mode",
+    "mode_header_only": "Header only (.hpp)",
+    "mode_source":     "Source + header (.cpp + .h)",
+    "inc_guard":       "Include guard",
+    "tidy":             "Tidy formatting",
+    "storage_label":   "Storage specifier",
+    "const_label":     "Const specifier",
+    "nums_per_line_label": "Numbers per line (0 = auto)",
+    "annotation_group": "Annotations",
+    "annot_tool":    "Tool name",
+    "annot_runner":  "Runner name",
+    "annot_toolname_placeholder":   "default: ZBinary2CArray-WinUI3",
+    "annot_runnername_placeholder": "default: current user"
+  },
+  "first_run": {
+    "language_title": "Select Language"
+  },
+  "convert": {
+    "button":      "Convert",
+    "in_progress": "Converting..."
+  },
+  "result": {
+    "title_success":    "Success",
+    "title_error":      "Error",
+    "success":           "Success: generated {0}",
+    "open_in_explorer":  "Open in Explorer"
+  },
+  "errors": {
+    "no_input":        "Please select an input file",
+    "no_output_dir":   "Please select an output directory",
+    "no_filename":     "Please enter an output file name",
+    "invalid_filename":"File name contains invalid characters",
+    "read_failed":     "Could not read input file: {0}",
+    "write_failed":    "Could not write output file: {0}",
+    "unexpected":      "Unexpected error: {0}"
+  },
+  "perm": {
+    "title": "Storage Permission Required",
+    "message": "This app needs access to all files to read input and write output. Please grant \"All files access\" in the next screen.",
+    "settings": "Open Settings"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel"
+  }
+}

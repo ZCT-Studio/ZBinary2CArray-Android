@@ -1,0 +1,53 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# Gradle
+.gradle/
+build/
+
+# IDE
+*.iml
+.idea/
+*.iws
+
+# Keystore
+*.jks
+*.keystore
+release.keystore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NDK
+.cxx/
+obj/
+
+# Build outputs
+app/build/
+app/release/
+
+# AI
+exec-approvals.json

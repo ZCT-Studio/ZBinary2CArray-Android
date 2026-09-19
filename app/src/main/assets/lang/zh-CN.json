@@ -1,0 +1,68 @@
+{
+  "input": {
+    "group": "输入文件",
+    "browse": "浏览...",
+    "placeholder": "未选择文件"
+  },
+  "output": {
+    "group": "输出",
+    "dir_label": "目录：",
+    "dir_browse": "浏览...",
+    "dir_placeholder": "未选择目录",
+    "filename_label": "文件名：",
+    "filename_placeholder": "输出文件名",
+    "filename_invalid": "文件名包含无效字符：< > : \" / \\ | ? *"
+  },
+  "options": {
+    "group": "选项",
+    "type_label": "元素类型",
+    "type_u8":  "unsigned char (u8)",
+    "type_u16": "unsigned short (u16)",
+    "type_u32": "unsigned int (u32)",
+    "type_u64": "unsigned long long (u64)",
+    "mode_label": "输出模式",
+    "mode_header_only": "仅头文件 (.hpp)",
+    "mode_source":     "源文件 + 头文件 (.cpp + .h)",
+    "inc_guard":       "包含保护",
+    "tidy":             "整洁格式化",
+    "storage_label":   "存储说明符",
+    "const_label":     "常量说明符",
+    "nums_per_line_label": "每行数字数（0 = 自动）",
+    "annotation_group": "注释信息",
+    "annot_tool":    "工具名",
+    "annot_runner":  "运行者",
+    "annot_toolname_placeholder":   "默认：ZBinary2CArray-WinUI3",
+    "annot_runnername_placeholder": "默认：当前用户"
+  },
+  "first_run": {
+    "language_title": "选择语言"
+  },
+  "convert": {
+    "button":      "转换",
+    "in_progress": "转换中..."
+  },
+  "result": {
+    "title_success":    "成功",
+    "title_error":      "错误",
+    "success":           "成功：已生成 {0}",
+    "open_in_explorer":  "在资源管理器中打开"
+  },
+  "errors": {
+    "no_input":        "请选择输入文件",
+    "no_output_dir":   "请选择输出目录",
+    "no_filename":     "请输入输出文件名",
+    "invalid_filename":"文件名包含无效字符",
+    "read_failed":     "无法读取输入文件：{0}",
+    "write_failed":    "无法写入输出文件：{0}",
+    "unexpected":      "未知错误：{0}"
+  },
+  "perm": {
+    "title": "需要存储权限",
+    "message": "此应用需要访问所有文件以读取输入和写入输出。请在下一步中授予"所有文件访问"权限。",
+    "settings": "打开设置"
+  },
+  "common": {
+    "ok": "确定",
+    "cancel": "取消"
+  }
+}

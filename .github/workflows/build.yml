@@ -1,0 +1,131 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  APP_NAME: ZBinary2CArray-Android
+  JAVA_VERSION: '17'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973 cmake;4.1.2'
+
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Collect APKs
+        shell: bash
+        run: |
+          mkdir -p staging
+          find app/build/outputs/apk -name "*.apk" -exec cp {} staging/ \;
+          echo "=== Built APKs ==="
+          ls -la staging/
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-release
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            app/build/reports/**/*.log
+            app/build/reports/**/*.txt
+          if-no-files-found: warn
+
+  release:
+    name: Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-release
+          path: release
+
+      - name: Rename artifacts for release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-renamed
+
+          for apk in release/*.apk; do
+            if [ ! -f "$apk" ]; then continue; fi
+            basename=$(basename "$apk")
+            # Extract ABI from filename like *arm64-v8a*.apk
+            abi="universal"
+            if echo "$basename" | grep -q "arm64-v8a"; then abi="arm64-v8a"
+            elif echo "$basename" | grep -q "armeabi-v7a"; then abi="armeabi-v7a"
+            elif echo "$basename" | grep -q "x86_64"; then abi="x86_64"
+            elif echo "$basename" | grep -q "x86"; then abi="x86"
+            fi
+
+            newname="ZBinary2CArray-Android_${GITHUB_REF_NAME}_${abi}.apk"
+            cp "$apk" "release-renamed/$newname"
+            echo "  -> $newname"
+          done
+
+          echo "--- Final release files ---"
+          ls -la release-renamed/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release-renamed/*.apk
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
