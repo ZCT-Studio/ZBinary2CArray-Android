@@ -18,8 +18,8 @@ android {
         applicationId = "io.github.zct_studio.zbinary2carray_android"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "v1.0-b1+core1.0.1"
+        versionCode = 10000
+        versionName = "v1.0.0+core1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
