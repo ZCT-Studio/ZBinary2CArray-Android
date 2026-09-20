@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  APP_NAME: ZBinary2CArray-Android
+  APP_NAME: zbtca-android
   JAVA_VERSION: '17'
 
 jobs:

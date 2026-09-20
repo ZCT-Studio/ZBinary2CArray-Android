@@ -32,7 +32,7 @@
     "annotation_group": "Annotations",
     "annot_tool":    "Tool name",
     "annot_runner":  "Runner name",
-    "annot_toolname_placeholder":   "default: ZBinary2CArray-WinUI3",
+    "annot_toolname_placeholder":   "default: ZBinary2CArray-Android",
     "annot_runnername_placeholder": "default: current user"
   },
   "first_run": {

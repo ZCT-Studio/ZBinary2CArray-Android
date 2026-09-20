@@ -32,7 +32,7 @@
     "annotation_group": "註解資訊",
     "annot_tool":    "工具名稱",
     "annot_runner":  "執行者",
-    "annot_toolname_placeholder":   "預設：ZBinary2CArray-WinUI3",
+    "annot_toolname_placeholder":   "預設：ZBinary2CArray-Android",
     "annot_runnername_placeholder": "預設：目前使用者"
   },
   "first_run": {

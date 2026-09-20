@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- WinUI3 accent blue -->
     <color name="winui_accent">#FF0078D4</color>
     <color name="winui_accent_dark">#FF106EBE</color>
     <color name="winui_accent_light">#FF60CDFF</color>
 
-    <!-- Surfaces light -->
     <color name="surface_light">#FFFFFFFF</color>
     <color name="bg_light">#FFF3F3F3</color>
     <color name="card_stroke_light">#FFD0D0D0</color>
 
-    <!-- Surfaces dark -->
     <color name="surface_dark">#FF2D2D2D</color>
     <color name="bg_dark">#FF1E1E1E</color>
     <color name="card_stroke_dark">#FF4A4A4A</color>
 
-    <!-- Legacy -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

@@ -32,7 +32,7 @@
     "annotation_group": "注释信息",
     "annot_tool":    "工具名",
     "annot_runner":  "运行者",
-    "annot_toolname_placeholder":   "默认：ZBinary2CArray-WinUI3",
+    "annot_toolname_placeholder":   "默认：ZBinary2CArray-Android",
     "annot_runnername_placeholder": "默认：当前用户"
   },
   "first_run": {

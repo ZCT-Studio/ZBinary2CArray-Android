@@ -1,34 +1,26 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Material3 DayNight theme — follows system automatically -->
     <style name="Theme.ZBinary2CArray" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Accent blue -->
         <item name="colorPrimary">@color/winui_accent</item>
         <item name="colorPrimaryContainer">#FFD4E8FA</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorOnPrimaryContainer">#FF001F33</item>
 
-        <!-- Secondary -->
         <item name="colorSecondary">@color/winui_accent_dark</item>
         <item name="colorOnSecondary">@color/white</item>
 
-        <!-- Surface -->
         <item name="colorSurface">@color/surface_light</item>
         <item name="colorOnSurface">@color/black</item>
         <item name="colorSurfaceVariant">#FFE7E0EC</item>
         <item name="colorOnSurfaceVariant">#FF49454F</item>
 
-        <!-- Background -->
         <item name="android:colorBackground">@color/bg_light</item>
 
-        <!-- Transparent status/nav bars — content draws behind them, we handle insets in code -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
-        <!-- Let Material3 decide light/dark icons for status bar (defaults to true for light, auto for dark via DayNight) -->
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 
-        <!-- No action bar -->
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>

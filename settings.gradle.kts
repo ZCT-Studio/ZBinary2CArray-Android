@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ZBinary2CArray"
+rootProject.name = "ZBinary2CArray-Android"
 include(":app")
