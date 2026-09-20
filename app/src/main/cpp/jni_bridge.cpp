@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-// ─── Helper: jstring <-> std::string ───────────────────────────────
+// Helper: jstring <-> std::string
 
 static std::string jstr2str(JNIEnv* env, jstring jstr) {
     if (!jstr) return {};
@@ -29,7 +29,7 @@ static jstring str2jstr(JNIEnv* env, const std::string& s) {
     return env->NewStringUTF(s.c_str());
 }
 
-// ─── Helper: split on comma ────────────────────────────────────────
+// split on comma
 
 static std::vector<std::string> splitArgs(const std::string& s) {
     std::vector<std::string> result;
@@ -43,7 +43,7 @@ static std::vector<std::string> splitArgs(const std::string& s) {
     return result;
 }
 
-// ─── Helper: build OutputCfg from JSON ─────────────────────────────
+// build OutputCfg from JSON
 
 static ZBTCA_Types::OutputCfg cfgFromJson(const core::JsonValue& j) {
     ZBTCA_Types::OutputCfg cfg{};
@@ -88,7 +88,7 @@ static ZBTCA_Types::OutputCfg cfgFromJson(const core::JsonValue& j) {
     return cfg;
 }
 
-// ─── JNI: nativeConvert ────────────────────────────────────────────
+// JNI: nativeConvert
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeConvert(
@@ -106,7 +106,6 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeConvert(
     core::JsonValue result;
     result["ok"] = core::JsonValue(false);
 
-    // Validate
     if (inputPath.empty()) {
         result["message"] = core::JsonValue(
             core::I18nManager::instance().tr("errors.no_input"));
@@ -123,7 +122,6 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeConvert(
         return str2jstr(env, result.dump());
     }
 
-    // Validate filename
     bool validStem = true;
     for (unsigned char c : outputStem) {
         if (c < 32) { validStem = false; break; }
@@ -140,11 +138,9 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeConvert(
         return str2jstr(env, result.dump());
     }
 
-    // Parse config
     core::JsonValue cfgJ = core::JsonValue::parse(cfgJson);
     ZBTCA_Types::OutputCfg cfg = cfgFromJson(cfgJ);
 
-    // Derive extension
     std::string ext;
     if (cfg.HeaderOnly) {
         ext = ".hpp";
@@ -152,7 +148,6 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeConvert(
         ext = ".cpp";
     }
 
-    // Build output path
     fs::path outPath = fs::path(outputDir) / fs::path(outputStem + ext);
 
     try {
@@ -197,7 +192,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeConvert(
     return str2jstr(env, result.dump());
 }
 
-// ─── JNI: nativeLoadLanguage ───────────────────────────────────────
+// nativeLoadLanguage
 
 extern "C" JNIEXPORT void JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeLoadLanguage(
@@ -212,7 +207,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeLoadLangua
     core::I18nManager::instance().load_language(tag, jv);
 }
 
-// ─── JNI: nativeSetLanguage ────────────────────────────────────────
+// NI: nativeSetLanguage
 
 extern "C" JNIEXPORT void JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeSetLanguage(
@@ -222,7 +217,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeSetLanguag
     core::I18nManager::instance().set_language(tag);
 }
 
-// ─── JNI: nativeGetCurrentLanguage ─────────────────────────────────
+// JNI: nativeGetCurrentLanguage
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeGetCurrentLanguage(
@@ -230,7 +225,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeGetCurrent
     return str2jstr(env, core::I18nManager::instance().current_language());
 }
 
-// ─── JNI: nativeTranslate ──────────────────────────────────────────
+// JNI: nativeTranslate
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeTranslate(
@@ -240,7 +235,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeTranslate(
     return str2jstr(env, core::I18nManager::instance().tr(key));
 }
 
-// ─── JNI: nativeTranslateArgs ──────────────────────────────────────
+// JNI: nativeTranslateArgs
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeTranslateArgs(
@@ -253,7 +248,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeTranslateA
     return str2jstr(env, core::I18nManager::instance().tr(key, argVec));
 }
 
-// ─── JNI: nativeLoadSettings ───────────────────────────────────────
+// JNI: nativeLoadSettings
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeLoadSettings(
@@ -270,7 +265,7 @@ Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeLoadSettin
     return str2jstr(env, result.dump());
 }
 
-// ─── JNI: nativeSaveSettings ───────────────────────────────────────
+// JNI: nativeSaveSettings
 
 extern "C" JNIEXPORT void JNICALL
 Java_io_github_zct_1studio_zbinary2carray_1android_NativeBridge_nativeSaveSettings(

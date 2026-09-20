@@ -25,50 +25,55 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
+          distribution: temurin
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973 cmake;4.1.2'
-
-      - name: Cache Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Restore release keystore
+        if: env.ANDROID_KEYSTORE_BASE64
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "${ANDROID_KEYSTORE_BASE64}" \
+            | tr -d '\r\n ' \
+            | base64 --ignore-garbage --decode > "$RUNNER_TEMP/release.jks"
+
+          chmod 600 "$RUNNER_TEMP/release.jks"
 
       - name: Build Release APK
         run: ./gradlew assembleRelease
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
-      - name: Collect APKs
+      - name: Verify APKs
         shell: bash
         run: |
-          mkdir -p staging
-          find app/build/outputs/apk -name "*.apk" -exec cp {} staging/ \;
-          echo "=== Built APKs ==="
-          ls -la staging/
+          set -euo pipefail
 
-      - name: Upload debug APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APP_NAME }}-debug
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
+          echo "=== Built APKs ==="
+          find app/build/outputs/apk/release -type f -name "*.apk" -print
+
+          if ! find app/build/outputs/apk/release -type f -name "*.apk" | grep -q .; then
+            echo "ERROR: No APK was produced."
+            exit 1
+          fi
 
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-release
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload build logs on failure
         if: failure()
@@ -80,11 +85,21 @@ jobs:
             app/build/reports/**/*.txt
           if-no-files-found: warn
 
+      - name: Remove temporary keystore
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/release.jks"
+
+
   release:
-    name: Release
+    name: Create GitHub Release
     needs: build
+
     if: startsWith(github.ref, 'refs/tags/v')
+
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
 
@@ -95,30 +110,48 @@ jobs:
           name: ${{ env.APP_NAME }}-release
           path: release
 
-      - name: Rename artifacts for release
+      - name: Rename APKs
         shell: bash
         run: |
           set -euo pipefail
+
           mkdir -p release-renamed
 
-          for apk in release/*.apk; do
-            if [ ! -f "$apk" ]; then continue; fi
+          shopt -s nullglob
+
+          apks=(release/*.apk)
+
+          if [ ${#apks[@]} -eq 0 ]; then
+            echo "ERROR: No APK found in downloaded artifact."
+            exit 1
+          fi
+
+          for apk in "${apks[@]}"; do
             basename=$(basename "$apk")
-            # Extract ABI from filename like *arm64-v8a*.apk
+
             abi="universal"
-            if echo "$basename" | grep -q "arm64-v8a"; then abi="arm64-v8a"
-            elif echo "$basename" | grep -q "armeabi-v7a"; then abi="armeabi-v7a"
-            elif echo "$basename" | grep -q "x86_64"; then abi="x86_64"
-            elif echo "$basename" | grep -q "x86"; then abi="x86"
+
+            if echo "$basename" | grep -q "arm64-v8a"; then
+              abi="arm64-v8a"
+            elif echo "$basename" | grep -q "armeabi-v7a"; then
+              abi="armeabi-v7a"
+            elif echo "$basename" | grep -q "x86_64"; then
+              abi="x86_64"
+            elif echo "$basename" | grep -q "x86"; then
+              abi="x86"
             fi
 
-            newname="ZBinary2CArray-Android_${GITHUB_REF_NAME}_${abi}.apk"
+            newname="${APP_NAME}_${GITHUB_REF_NAME}_${abi}.apk"
+
             cp "$apk" "release-renamed/$newname"
-            echo "  -> $newname"
+
+            echo "  $basename"
+            echo "    -> $newname"
           done
 
-          echo "--- Final release files ---"
-          ls -la release-renamed/
+          echo
+          echo "=== Final release files ==="
+          ls -lah release-renamed/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

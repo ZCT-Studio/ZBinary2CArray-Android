@@ -15,13 +15,6 @@ import com.google.android.material.color.MaterialColors;
 import android.content.res.ColorStateList;
 import java.io.File;
 import java.util.*;
-
-/**
- * Custom file/folder picker — zero Android SAF dependency.
- * <p>
- * File mode:   tap file = pick, tap folder = enter.
- * Folder mode: tap folder = enter, bottom "Select" button picks current folder.
- */
 public class FilePickerDialog extends Dialog {
 
     public interface OnPathPickedListener { void onPathPicked(String path); }
@@ -64,9 +57,6 @@ public class FilePickerDialog extends Dialog {
             w.addFlags(flags);
         }
     }
-
-    // ── Layout ────────────────────────────────────────────────────
-
     private View createLayout() {
         mRootFrame = new FrameLayout(getContext());
         mRootFrame.setLayoutParams(new FrameLayout.LayoutParams(
@@ -74,7 +64,6 @@ public class FilePickerDialog extends Dialog {
         mRootFrame.setBackgroundColor(MaterialColors.getColor(getContext(),
                 android.R.attr.colorBackground, android.graphics.Color.WHITE));
 
-        // Apply WindowInsets so content clears status/nav bars
         ViewCompat.setOnApplyWindowInsetsListener(mRootFrame, (v, insets) -> {
             int left   = insets.getInsets(WindowInsetsCompat.Type.systemBars()).left;
             int top    = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
@@ -88,18 +77,15 @@ public class FilePickerDialog extends Dialog {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(8), dp(2), dp(8), dp(2));
 
-        // ── Top app bar ──
         LinearLayout topBar = buildTopBar();
         root.addView(topBar);
 
-        // ── Path bar ──
         LinearLayout pathRow = buildPathRow();
         root.addView(pathRow);
 
-        // ── New folder button (folder mode only) ──
         if (mFolderMode) {
             MaterialButton nfBtn = new MaterialButton(getContext());
-            nfBtn.setText("＋ 新建文件夹");
+            nfBtn.setText("＋ " + tr("picker.new_folder"));
             nfBtn.setAllCaps(false);
             nfBtn.setTextSize(14);
             nfBtn.setPadding(dp(12), dp(8), dp(12), dp(8));
@@ -143,7 +129,7 @@ public class FilePickerDialog extends Dialog {
         bottomBar.setPadding(0, dp(8), 0, dp(4));
 
         MaterialButton cancelBtn = new MaterialButton(getContext());
-        cancelBtn.setText("取消");
+        cancelBtn.setText(tr("common.cancel"));
         cancelBtn.setAllCaps(false);
         cancelBtn.setTextSize(14);
         cancelBtn.setPadding(dp(16), dp(10), dp(16), dp(10));
@@ -157,7 +143,7 @@ public class FilePickerDialog extends Dialog {
 
         if (mFolderMode) {
             mSelectFolderBtn = new MaterialButton(getContext());
-            mSelectFolderBtn.setText("选择此文件夹");
+            mSelectFolderBtn.setText(tr("picker.select_folder"));
             mSelectFolderBtn.setAllCaps(false);
             mSelectFolderBtn.setTextSize(14);
             mSelectFolderBtn.setPadding(dp(20), dp(10), dp(20), dp(10));
@@ -177,7 +163,7 @@ public class FilePickerDialog extends Dialog {
             bottomBar.addView(mSelectFolderBtn);
         } else {
             TextView hint = new TextView(getContext());
-            hint.setText("点击列表中的文件即可选择");
+            hint.setText(tr("picker.select_file_hint"));
             hint.setTextSize(13);
             hint.setTextColor(MaterialColors.getColor(getContext(),
                     com.google.android.material.R.attr.colorOnSurfaceVariant, 0xFF666666));
@@ -222,7 +208,7 @@ public class FilePickerDialog extends Dialog {
         top.addView(backBtn);
 
         mTitle = new TextView(getContext());
-        mTitle.setText(mFolderMode ? "选择输出文件夹" : "选择输入文件");
+        mTitle.setText(tr(mFolderMode ? "picker.output_folder_title" : "picker.input_file_title"));
         mTitle.setTextSize(20);
         mTitle.setTypeface(null, Typeface.BOLD);
         mTitle.setTextColor(MaterialColors.getColor(getContext(),
@@ -265,7 +251,7 @@ public class FilePickerDialog extends Dialog {
                 com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.WHITE));
         mPathEdit.setHintTextColor(MaterialColors.getColor(getContext(),
                 com.google.android.material.R.attr.colorOnSurfaceVariant, 0x99000000));
-        mPathEdit.setHint("存储路径");
+        mPathEdit.setHint(tr("picker.path_hint"));
         mPathEdit.setBackground(createEditBg());
         mPathEdit.setPadding(dp(12), dp(8), dp(12), dp(8));
         LinearLayout.LayoutParams peLp = new LinearLayout.LayoutParams(
@@ -308,7 +294,7 @@ public class FilePickerDialog extends Dialog {
         File[] children = new File(mCurrentPath).listFiles();
         if (children == null || children.length == 0) {
             TextView empty = new TextView(getContext());
-            empty.setText("此文件夹为空，或暂时无法访问");
+            empty.setText(tr("picker.empty_or_unavailable"));
             empty.setTextSize(14);
             empty.setTextColor(MaterialColors.getColor(getContext(),
                     com.google.android.material.R.attr.colorOnSurfaceVariant, 0x99000000));
@@ -364,7 +350,7 @@ public class FilePickerDialog extends Dialog {
 
     private void showNewFolderDialog() {
         final EditText et = new EditText(getContext());
-        et.setHint("文件夹名称");
+        et.setHint(tr("picker.folder_name_hint"));
         et.setTextColor(MaterialColors.getColor(getContext(),
                 com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.WHITE));
         et.setHintTextColor(MaterialColors.getColor(getContext(),
@@ -373,16 +359,16 @@ public class FilePickerDialog extends Dialog {
         et.setPadding(dp(12), dp(10), dp(12), dp(10));
 
         new android.app.AlertDialog.Builder(getContext())
-                .setTitle("新建文件夹")
+                .setTitle(tr("picker.new_folder"))
                 .setView(et)
-                .setPositiveButton("创建", (d, w) -> {
+                .setPositiveButton(tr("picker.create"), (d, w) -> {
                     String n = et.getText().toString().trim();
                     if (!n.isEmpty()) {
                         File nd = new File(mCurrentPath, n);
                         if (nd.mkdirs()) refreshList();
-                        else Toast.makeText(getContext(), "创建失败，请检查文件夹名称或存储权限", Toast.LENGTH_SHORT).show();
+                        else Toast.makeText(getContext(), tr("picker.create_failed"), Toast.LENGTH_SHORT).show();
                     }
-                }).setNegativeButton("取消", null).show();
+                }).setNegativeButton(tr("common.cancel"), null).show();
     }
 
     // ── Styling ───────────────────────────────────────────────────
@@ -409,6 +395,10 @@ public class FilePickerDialog extends Dialog {
 
     private int dp(int px) {
         return (int)(px * getContext().getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private String tr(String key) {
+        return NativeBridge.nativeTranslate(key);
     }
 }
 

@@ -29,19 +29,17 @@ import java.util.concurrent.*;
 
 public class MainActivity extends AppCompatActivity {
 
-    // ── State ──────────────────────────────────────────────────────
     private String  mInputPath    = "";
     private String  mOutputDir    = "";
     private boolean mIsTabletLayout;
     private String  mSettingsPath;
     private boolean mBuilt = false;
+    private boolean mWaitingForStoragePermission = false;
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private final Handler mHandler = new Handler(Looper.getMainLooper());
 
-    // ── Views: top bar ─────────────────────────────────────────────
     private Spinner    mLangSpinner;
 
-    // ── Views: input/output ────────────────────────────────────────
     private EditText   mInputPathEdit;
     private Button     mBrowseInputBtn;
     private EditText   mOutputDirEdit;
@@ -49,17 +47,14 @@ public class MainActivity extends AppCompatActivity {
     private EditText   mOutputStemEdit;
     private TextView   mFilenameInvalidHint;
 
-    // ── Views: convert ─────────────────────────────────────────────
     private Button     mConvertBtn;
     private ProgressBar mProgressBar;
     private TextView   mStatusText;
 
-    // ── Views: result ──────────────────────────────────────────────
     private MaterialCardView mResultCard;
     private TextView   mResultTitle, mResultMessage;
     private Button     mOpenOutputBtn;
 
-    // ── Views: options ─────────────────────────────────────────────
     private RadioGroup mTypeRadio;
     private Switch     mModeSwitch;
     private TextView   mModeExplain;
@@ -69,20 +64,18 @@ public class MainActivity extends AppCompatActivity {
     private Switch     mAnnotToolSwitch, mAnnotRunnerSwitch;
     private EditText   mAnnotToolNameEdit, mAnnotRunnerNameEdit;
 
-    // ── Title / card title refs for i18n refresh ───────────────────
     private TextView   mTitleView;
     private LinearLayout mLeftCol, mRightCol;
-    private FrameLayout mAppBarSpacer; // padding below status bar
+    private FrameLayout mAppBarSpacer;
 
     private ActivityResultLauncher<String> mPermLauncher;
 
-    // ── Lifecycle ──────────────────────────────────────────────────
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Draw behind system bars — we handle insets per-view
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        applySystemBarAppearance();
 
         mSettingsPath = getFilesDir().getAbsolutePath() + "/settings.json";
 
@@ -90,14 +83,10 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.RequestPermission(),
                 granted -> { if (!granted) showPermDialog(); else afterPermGranted(); });
 
-        // Always follow system — no manual theme toggle
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
 
-        // 1. Detect system language
         String sysLang = detectSystemLanguage();
-        // 2. Load settings (or use system lang for first run)
         boolean firstRun = loadSettings(sysLang);
-        // 3. Load locale assets into native
         loadLocales();
         NativeBridge.nativeSetLanguage(getStoredLang());
 
@@ -111,12 +100,18 @@ public class MainActivity extends AppCompatActivity {
     @Override public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         mIsTabletLayout = isWide();
-        // uiMode is handled in the manifest, so recreate our programmatic view tree here.
-        // This applies fresh Material colours immediately when the system theme changes.
         if (mBuilt) rebuildUI();
     }
 
-    // ── Initialization flow ────────────────────────────────────────
+    @Override protected void onResume() {
+        super.onResume();
+        applySystemBarAppearance();
+        if (mWaitingForStoragePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                && Environment.isExternalStorageManager()) {
+            mWaitingForStoragePermission = false;
+            if (!mBuilt) afterPermGranted();
+        }
+    }
 
     private String detectSystemLanguage() {
         Locale loc = Locale.getDefault();
@@ -141,7 +136,6 @@ public class MainActivity extends AppCompatActivity {
             boolean first = jo.optBoolean("first_run", true);
             String lang = jo.optString("language", sysLang);
             NativeBridge.nativeSetLanguage(lang);
-            // Theme is now always follow-system; we intentionally ignore any saved "theme" field.
             return first;
         } catch (Exception e) {
             NativeBridge.nativeSetLanguage(sysLang);
@@ -164,7 +158,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkPermAndBuild() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) { showPermDialog(); return; }
+            if (!Environment.isExternalStorageManager()) {
+                mWaitingForStoragePermission = true;
+                showPermDialog();
+                return;
+            }
         } else {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -176,13 +174,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void afterPermGranted() {
+        if (mBuilt) return;
+        mWaitingForStoragePermission = false;
         mIsTabletLayout = isWide();
         buildUI();
         mBuilt = true;
         refreshAllText();
     }
-
-    // ── Permission dialog ──────────────────────────────────────────
 
     private void showPermDialog() {
         new AlertDialog.Builder(this)
@@ -203,8 +201,6 @@ public class MainActivity extends AppCompatActivity {
             .setNegativeButton(tr("common.cancel"), (d, w) -> finish())
             .setCancelable(false).show();
     }
-
-    // ── First-run language dialog ──────────────────────────────────
 
     private void showFirstRunLangDialog() {
         final String[] tags  = {"en-US", "zh-CN", "zh-TW"};
@@ -228,8 +224,6 @@ public class MainActivity extends AppCompatActivity {
             .setCancelable(false).show();
     }
 
-    // ── Settings persistence ───────────────────────────────────────
-
     private void saveSettings(String lang) {
         try {
             org.json.JSONObject jo = new org.json.JSONObject();
@@ -239,19 +233,17 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) { /* ignore */ }
     }
 
-    // ── Build UI ───────────────────────────────────────────────────
-
     private void rebuildUI() {
+        UiState state = captureUiState();
         ViewGroup root = findViewById(android.R.id.content);
         root.removeAllViews();
         mBuilt = false;
         buildUI();
         mBuilt = true;
-        refreshAllText();
+        restoreUiState(state);
     }
 
     private void buildUI() {
-        // Root FrameLayout — handles system bar insets via WindowInsets
         FrameLayout root = new FrameLayout(this);
         root.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -261,7 +253,6 @@ public class MainActivity extends AppCompatActivity {
         ScrollView sv = new ScrollView(this);
         sv.setFillViewport(true);
 
-        // Apply WindowInsets to scroll content — our only insets handler
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             int left   = insets.getInsets(WindowInsetsCompat.Type.systemBars()).left;
             int top    = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
@@ -275,11 +266,9 @@ public class MainActivity extends AppCompatActivity {
         body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(dp(16), dp(8), dp(16), dp(20));
 
-        // ── Top app bar ──
         LinearLayout top = buildTopBar();
         body.addView(top);
 
-        // ── Main columns ──
         LinearLayout cols = new LinearLayout(this);
         cols.setOrientation(mIsTabletLayout ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
@@ -307,12 +296,12 @@ public class MainActivity extends AppCompatActivity {
         cols.addView(mLeftCol); cols.addView(mRightCol);
         body.addView(cols);
 
-        // ── Build sections ──
         addInputCard(mLeftCol);
         addOutputCard(mLeftCol);
         addConvertCard(mLeftCol);
         addOptionsCard(mRightCol);
-        mRightCol.addView(buildFooter());
+
+        body.addView(buildFooter());
 
         sv.addView(body);
         root.addView(sv);
@@ -330,7 +319,7 @@ public class MainActivity extends AppCompatActivity {
         topLp.setMargins(0, 0, 0, dp(16));
         top.setLayoutParams(topLp);
 
-        // Title column: two lines
+
         LinearLayout titleCol = new LinearLayout(this);
         titleCol.setOrientation(LinearLayout.VERTICAL);
         mTitleView = new TextView(this);
@@ -355,7 +344,6 @@ public class MainActivity extends AppCompatActivity {
         titleCol.setOnClickListener(v -> openExternalUrl("https://github.com/ZCT-Studio/ZBinary2CArray-Android"));
         top.addView(titleCol);
 
-        // Language icon + spinner — compact
         TextView langIcon = new TextView(this);
         langIcon.setText("\uD83C\uDF10"); // 🌐
         langIcon.setTextSize(16);
@@ -391,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
                 String tag = (String) p.getItemAtPosition(pos);
                 NativeBridge.nativeSetLanguage(tag);
                 saveSettings(tag);
-                refreshAllText();
+                rebuildUI();
             }
             public void onNothingSelected(AdapterView<?> p) {}
         });
@@ -399,8 +387,6 @@ public class MainActivity extends AppCompatActivity {
 
         return top;
     }
-
-    // ── Cards ──────────────────────────────────────────────────────
 
     private MaterialCardView card() {
         MaterialCardView c = new MaterialCardView(this);
@@ -452,7 +438,6 @@ public class MainActivity extends AppCompatActivity {
 
         body.addView(secTitle("output.group"));
 
-        // Dir row
         LinearLayout dr = hrow();
         dr.setGravity(Gravity.BOTTOM);
         LinearLayout dirWrap = new LinearLayout(this);
@@ -480,7 +465,6 @@ public class MainActivity extends AppCompatActivity {
         dr.addView(mBrowseDirBtn);
         body.addView(dr);
 
-        // Filename row
         body.addView(space(12));
         mOutputStemEdit = new EditText(this);
         mOutputStemEdit.setTextColor(MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface,
@@ -586,7 +570,6 @@ public class MainActivity extends AppCompatActivity {
 
         body.addView(secTitle("options.group"));
 
-        // Element type — one option per row is easier to scan and avoids accidental taps.
         body.addView(lbl("options.type_label"));
         mTypeRadio = new RadioGroup(this);
         mTypeRadio.setOrientation(LinearLayout.VERTICAL);
@@ -609,7 +592,6 @@ public class MainActivity extends AppCompatActivity {
         ((RadioButton) mTypeRadio.getChildAt(0)).setChecked(true);
         body.addView(mTypeRadio);
 
-        // Output mode is independent so its current result is always clear.
         body.addView(space(8));
         LinearLayout modeWrap = new LinearLayout(this); modeWrap.setOrientation(LinearLayout.VERTICAL);
         mModeSwitch = new Switch(this);
@@ -624,8 +606,8 @@ public class MainActivity extends AppCompatActivity {
         mModeExplain.setTextColor(MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant, 0x99000000));
         mModeExplain.setPadding(dp(48), 0, 0, 0);
         mModeSwitch.setOnCheckedChangeListener((btn, on) -> mModeExplain.setText(
-                "当前模式：" + tr(on ? "options.mode_header_only" : "options.mode_source")));
-        mModeExplain.setText("当前模式：" + tr("options.mode_header_only"));
+                tr("options.current_mode") + tr(on ? "options.mode_header_only" : "options.mode_source")));
+        mModeExplain.setText(tr("options.current_mode") + tr("options.mode_header_only"));
         modeWrap.addView(mModeExplain);
         body.addView(modeWrap);
 
@@ -635,7 +617,6 @@ public class MainActivity extends AppCompatActivity {
         mTidySwitch     = switchWithLabel(swRow, "options.tidy", true);
         body.addView(swRow);
 
-        // Storage + Const (in comboRow)
         body.addView(space(8));
         LinearLayout comboRow = hrow();
         mStorageWrap = spinnerWrap("options.storage_label", new String[]{"none", "static", "inline"});
@@ -645,7 +626,6 @@ public class MainActivity extends AppCompatActivity {
         comboRow.addView(mConstWrap);
         body.addView(comboRow);
 
-        // Nums per line
         body.addView(space(8));
         LinearLayout nplWrap = new LinearLayout(this);
         nplWrap.setOrientation(LinearLayout.VERTICAL);
@@ -659,7 +639,6 @@ public class MainActivity extends AppCompatActivity {
         nplWrap.addView(mNumsPerLineEdit);
         body.addView(nplWrap);
 
-        // Annotations
         body.addView(space(16));
         TextView annTitle = new TextView(this);
         annTitle.setText(tr("options.annotation_group"));
@@ -669,7 +648,6 @@ public class MainActivity extends AppCompatActivity {
         annTitle.setPadding(0, 0, 0, dp(8));
         body.addView(annTitle);
 
-        // Tool name section
         LinearLayout toolRow = hrow();
         mAnnotToolSwitch = new Switch(this); mAnnotToolSwitch.setChecked(true);
         toolRow.addView(mAnnotToolSwitch);
@@ -694,7 +672,6 @@ public class MainActivity extends AppCompatActivity {
                 mAnnotToolNameEdit.setEnabled(on));
         body.addView(mAnnotToolNameEdit);
 
-        // Runner section
         body.addView(space(8));
         LinearLayout runRow = hrow();
         mAnnotRunnerSwitch = new Switch(this); mAnnotRunnerSwitch.setChecked(true);
@@ -722,8 +699,6 @@ public class MainActivity extends AppCompatActivity {
 
         parent.addView(c);
     }
-
-    // ── UI helpers ─────────────────────────────────────────────────
 
     private LinearLayout cardContent(MaterialCardView c) {
         LinearLayout body = new LinearLayout(this);
@@ -896,17 +871,16 @@ public class MainActivity extends AppCompatActivity {
         return gd;
     }
 
-    /** Build.MODEL is backed by Android's ro.product.model system property. */
     private String getDeviceModelName() {
         String model = Build.MODEL == null ? "" : Build.MODEL.trim();
-        return model.isEmpty() ? "Android 设备" : model;
+        return model.isEmpty() ? "Android" : model;
     }
 
     private void openExternalUrl(String url) {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
-            Toast.makeText(this, "无法打开链接", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, tr("errors.open_link_failed"), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -915,8 +889,6 @@ public class MainActivity extends AppCompatActivity {
         v.setLayoutParams(new LinearLayout.LayoutParams(w, 0));
         return v;
     }
-
-    // ── File picker ────────────────────────────────────────────────
 
     private void pickFile() {
         String init = mInputPath.isEmpty()
@@ -939,8 +911,6 @@ public class MainActivity extends AppCompatActivity {
             mOutputDir = path; mOutputDirEdit.setText(path);
         }).show();
     }
-
-    // ── Conversion ─────────────────────────────────────────────────
 
     private void doConvert() {
         String in  = mInputPathEdit.getText().toString().trim();
@@ -1051,40 +1021,84 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(treeIntent);
             }
         } catch (Exception e) {
-            Toast.makeText(this, "无法打开输出目录", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, tr("errors.open_output_failed"), Toast.LENGTH_SHORT).show();
         }
     }
 
-    // ── I18n refresh ───────────────────────────────────────────────
+    private static final class UiState {
+        String inputPath, outputDir, outputStem, numsPerLine, toolName, runnerName;
+        int typeIndex;
+        boolean headerOnly, includeGuard, tidy, annotateTool, annotateRunner;
+    }
+
+    private UiState captureUiState() {
+        UiState state = new UiState();
+        if (!mBuilt) return state;
+        state.inputPath = mInputPathEdit.getText().toString();
+        state.outputDir = mOutputDirEdit.getText().toString();
+        state.outputStem = mOutputStemEdit.getText().toString();
+        state.numsPerLine = mNumsPerLineEdit.getText().toString();
+        state.toolName = mAnnotToolNameEdit.getText().toString();
+        state.runnerName = mAnnotRunnerNameEdit.getText().toString();
+        View selected = mTypeRadio.findViewById(mTypeRadio.getCheckedRadioButtonId());
+        state.typeIndex = Math.max(0, mTypeRadio.indexOfChild(selected));
+        state.headerOnly = mModeSwitch.isChecked();
+        state.includeGuard = mIncGuardSwitch.isChecked();
+        state.tidy = mTidySwitch.isChecked();
+        state.annotateTool = mAnnotToolSwitch.isChecked();
+        state.annotateRunner = mAnnotRunnerSwitch.isChecked();
+        return state;
+    }
+
+    private void restoreUiState(UiState state) {
+        if (state == null || !mBuilt) return;
+        mInputPath = state.inputPath;
+        mOutputDir = state.outputDir;
+        mInputPathEdit.setText(state.inputPath);
+        mOutputDirEdit.setText(state.outputDir);
+        mOutputStemEdit.setText(state.outputStem);
+        mNumsPerLineEdit.setText(state.numsPerLine);
+        mAnnotToolNameEdit.setText(state.toolName);
+        mAnnotRunnerNameEdit.setText(state.runnerName);
+        if (state.typeIndex < mTypeRadio.getChildCount())
+            mTypeRadio.check(mTypeRadio.getChildAt(state.typeIndex).getId());
+        mModeSwitch.setChecked(state.headerOnly);
+        mIncGuardSwitch.setChecked(state.includeGuard);
+        mTidySwitch.setChecked(state.tidy);
+        mAnnotToolSwitch.setChecked(state.annotateTool);
+        mAnnotRunnerSwitch.setChecked(state.annotateRunner);
+    }
 
     private void refreshAllText() {
         if (!mBuilt) return;
         mTitleView.setText("ZBinary2CArray");
 
-        // Input
         mBrowseInputBtn.setText("...");
         mInputPathEdit.setHint(tr("input.placeholder"));
 
-        // Output
         mBrowseDirBtn.setText("...");
         mOutputDirEdit.setHint(tr("output.dir_placeholder"));
         mOutputStemEdit.setHint(tr("output.filename_placeholder"));
 
-        // Convert
         mConvertBtn.setText(tr("convert.button"));
         if (mStatusText.getVisibility() == View.VISIBLE)
             mStatusText.setText(tr("convert.in_progress"));
-
-        // Result feedback is now shown in a dialog, so it has no persistent view to refresh.
     }
-
-    // ── Translate helper ───────────────────────────────────────────
 
     private String tr(String key) {
         return NativeBridge.nativeTranslate(key);
     }
 
-    // ── Styling ────────────────────────────────────────────────────
+    private void applySystemBarAppearance() {
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        boolean lightBars = (getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) != Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+                getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(lightBars);
+        controller.setAppearanceLightNavigationBars(lightBars);
+    }
 
     private android.graphics.drawable.Drawable createEditBg() {
         android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();

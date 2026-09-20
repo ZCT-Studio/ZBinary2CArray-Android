@@ -23,6 +23,7 @@
     "mode_label": "輸出模式",
     "mode_header_only": "僅標頭檔 (.hpp)",
     "mode_source":     "原始檔 + 標頭檔 (.cpp + .h)",
+    "current_mode": "目前模式：",
     "inc_guard":       "包含保護",
     "tidy":             "整潔格式化",
     "storage_label":   "儲存指定詞",
@@ -54,7 +55,9 @@
     "invalid_filename":"檔案名稱包含無效字元",
     "read_failed":     "無法讀取輸入檔案：{0}",
     "write_failed":    "無法寫入輸出檔案：{0}",
-    "unexpected":      "未知錯誤：{0}"
+    "unexpected":      "未知錯誤：{0}",
+    "open_output_failed": "無法開啟輸出目錄",
+    "open_link_failed": "無法開啟連結"
   },
   "perm": {
     "title": "需要儲存權限",
@@ -64,5 +67,17 @@
   "common": {
     "ok": "確定",
     "cancel": "取消"
+  },
+  "picker": {
+    "new_folder": "新增資料夾",
+    "select_folder": "選擇此資料夾",
+    "select_file_hint": "點選清單中的檔案即可選擇",
+    "output_folder_title": "選擇輸出資料夾",
+    "input_file_title": "選擇輸入檔案",
+    "path_hint": "儲存路徑",
+    "empty_or_unavailable": "此資料夾為空或目前無法存取",
+    "folder_name_hint": "資料夾名稱",
+    "create": "建立",
+    "create_failed": "建立失敗，請檢查資料夾名稱或儲存權限"
   }
 }

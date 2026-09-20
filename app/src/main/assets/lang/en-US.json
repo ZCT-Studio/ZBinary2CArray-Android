@@ -23,6 +23,7 @@
     "mode_label": "Output mode",
     "mode_header_only": "Header only (.hpp)",
     "mode_source":     "Source + header (.cpp + .h)",
+    "current_mode": "Current mode: ",
     "inc_guard":       "Include guard",
     "tidy":             "Tidy formatting",
     "storage_label":   "Storage specifier",
@@ -54,7 +55,9 @@
     "invalid_filename":"File name contains invalid characters",
     "read_failed":     "Could not read input file: {0}",
     "write_failed":    "Could not write output file: {0}",
-    "unexpected":      "Unexpected error: {0}"
+    "unexpected":      "Unexpected error: {0}",
+    "open_output_failed": "Unable to open the output directory",
+    "open_link_failed": "Unable to open the link"
   },
   "perm": {
     "title": "Storage Permission Required",
@@ -64,5 +67,17 @@
   "common": {
     "ok": "OK",
     "cancel": "Cancel"
+  },
+  "picker": {
+    "new_folder": "New folder",
+    "select_folder": "Select this folder",
+    "select_file_hint": "Tap a file in the list to select it",
+    "output_folder_title": "Select output folder",
+    "input_file_title": "Select input file",
+    "path_hint": "Storage path",
+    "empty_or_unavailable": "This folder is empty or currently unavailable",
+    "folder_name_hint": "Folder name",
+    "create": "Create",
+    "create_failed": "Unable to create folder. Check its name and storage permission."
   }
 }

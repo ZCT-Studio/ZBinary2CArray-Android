@@ -1,4 +1,3 @@
-*.iml
 .gradle
 /local.properties
 /.idea/caches
@@ -7,7 +6,6 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
 /build
 /captures
 .externalNativeBuild
@@ -48,6 +46,12 @@ obj/
 # Build outputs
 app/build/
 app/release/
+
+# Local Gradle env overrides (signing credentials, etc.)
+gradle.env.properties
+
+# signing credentials
+storefiles/*
 
 # AI
 exec-approvals.json

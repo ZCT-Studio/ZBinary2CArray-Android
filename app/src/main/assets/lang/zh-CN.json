@@ -23,6 +23,7 @@
     "mode_label": "输出模式",
     "mode_header_only": "仅头文件 (.hpp)",
     "mode_source":     "源文件 + 头文件 (.cpp + .h)",
+    "current_mode": "当前模式：",
     "inc_guard":       "包含保护",
     "tidy":             "整洁格式化",
     "storage_label":   "存储说明符",
@@ -54,15 +55,29 @@
     "invalid_filename":"文件名包含无效字符",
     "read_failed":     "无法读取输入文件：{0}",
     "write_failed":    "无法写入输出文件：{0}",
-    "unexpected":      "未知错误：{0}"
+    "unexpected":      "未知错误：{0}",
+    "open_output_failed": "无法打开输出目录",
+    "open_link_failed": "无法打开链接"
   },
   "perm": {
     "title": "需要存储权限",
-    "message": "此应用需要访问所有文件以读取输入和写入输出。请在下一步中授予"所有文件访问"权限。",
+    "message": "此应用需要访问所有文件以读取输入和写入输出。请在下一步中授予「所有文件访问」权限。",
     "settings": "打开设置"
   },
   "common": {
     "ok": "确定",
     "cancel": "取消"
+  },
+  "picker": {
+    "new_folder": "新建文件夹",
+    "select_folder": "选择此文件夹",
+    "select_file_hint": "点击列表中的文件即可选择",
+    "output_folder_title": "选择输出文件夹",
+    "input_file_title": "选择输入文件",
+    "path_hint": "存储路径",
+    "empty_or_unavailable": "此文件夹为空，或暂时无法访问",
+    "folder_name_hint": "文件夹名称",
+    "create": "创建",
+    "create_failed": "创建失败，请检查文件夹名称或存储权限"
   }
 }

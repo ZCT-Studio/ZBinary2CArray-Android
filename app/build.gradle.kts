@@ -1,5 +1,13 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
+}
+
+val envProps = Properties().apply {
+    val f = rootProject.file("gradle.env.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -22,10 +30,18 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = rootProject.file("release.keystore").takeIf { it.exists() }
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: "zbinary2carray"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            val storeFilePath = envProps.getProperty("ANDROID_KEYSTORE_FILE")
+                ?: System.getenv("ANDROID_KEYSTORE_FILE")
+            storeFile = storeFilePath?.let { path ->
+                val resolved = File(path).let { if (it.isAbsolute) it else rootDir.resolve(path) }
+                resolved
+            }
+            storePassword = (envProps.getProperty("ANDROID_KEYSTORE_PASSWORD")
+                ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")).orEmpty()
+            keyAlias = (envProps.getProperty("ANDROID_KEY_ALIAS")
+                ?: System.getenv("ANDROID_KEY_ALIAS")).orEmpty()
+            keyPassword = (envProps.getProperty("ANDROID_KEY_PASSWORD")
+                ?: System.getenv("ANDROID_KEY_PASSWORD")).orEmpty()
         }
     }
 
@@ -37,11 +53,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = if (signingConfigs.getByName("release").storeFile != null) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false
@@ -65,6 +77,70 @@ android {
     buildFeatures {
         viewBinding = true
     }
+}
+
+val validateReleaseSigning by tasks.registering {
+    group = "verification"
+    description = "Validate release signing configuration before assembleRelease."
+    notCompatibleWithConfigurationCache("Reads env vars + gradle.env.properties at execution time.")
+
+    doLast {
+        val props = Properties().apply {
+            val f = rootProject.file("gradle.env.properties")
+            if (f.exists()) f.inputStream().use { load(it) }
+        }
+
+        fun rawValue(name: String): String? =
+            props.getProperty(name) ?: System.getenv(name)
+
+        fun resolveFile(path: String): File {
+            val f = File(path)
+            return if (f.isAbsolute) f else rootDir.resolve(path)
+        }
+
+        val missing = mutableListOf<String>()
+        val hasEnvFile = rootProject.file("gradle.env.properties").exists()
+        val sourceHint = if (hasEnvFile) "gradle.env.properties" else "environment variables"
+
+        val keystorePathRaw = rawValue("ANDROID_KEYSTORE_FILE")
+        if (keystorePathRaw == null) {
+            missing += "ANDROID_KEYSTORE_FILE"
+        } else {
+            val keystoreFile = resolveFile(keystorePathRaw)
+            if (!keystoreFile.exists()) {
+                throw GradleException(
+                    buildString {
+                        appendLine("Keystore file not found: ${keystoreFile.absolutePath}")
+                        appendLine("Configured via ANDROID_KEYSTORE_FILE = \"$keystorePathRaw\"")
+                        appendLine()
+                        appendLine("Update ANDROID_KEYSTORE_FILE in $sourceHint so it points to")
+                        appendLine("an existing .jks / .keystore file.")
+                    }
+                )
+            }
+        }
+
+        if (rawValue("ANDROID_KEYSTORE_PASSWORD") == null) missing += "ANDROID_KEYSTORE_PASSWORD"
+        if (rawValue("ANDROID_KEY_ALIAS") == null) missing += "ANDROID_KEY_ALIAS"
+        if (rawValue("ANDROID_KEY_PASSWORD") == null) missing += "ANDROID_KEY_PASSWORD"
+
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine("Release signing is incomplete. Missing ${missing.size} value(s):")
+                    appendLine("  ${missing.joinToString(", ")}")
+                    appendLine()
+                    appendLine("Configure them in $sourceHint.")
+                    appendLine("Copy gradle.env.properties.example -> gradle.env.properties,")
+                    appendLine("or set them as OS environment variables.")
+                }
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "validateSigningRelease" }.configureEach {
+    dependsOn(validateReleaseSigning)
 }
 
 dependencies {
